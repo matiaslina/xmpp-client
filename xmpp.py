@@ -10,8 +10,6 @@ class Connection(sleekxmpp.ClientXMPP):
             mail = mail[0:len(mail)-1]
             password = account_file.readline()
             password = password[0:len(password)-1]
-        print(mail)
-        print(password)
         super(Connection, self).__init__(mail, password)
 
         self.add_event_handler('session_start', self.start)
