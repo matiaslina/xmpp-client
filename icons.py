@@ -1,6 +1,9 @@
 from gi.repository import Gio
 
 def settings_icon():
+    return Gio.ThemedIcon(name="preferences-system-symbolic")
+
+def list_icon():
     return Gio.ThemedIcon(name="view-sidebar-symbolic")
 
 def available_icon():

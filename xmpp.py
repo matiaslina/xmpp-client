@@ -1,10 +1,14 @@
 import sleekxmpp
+from mainwindow import MainWindow
+from gi.repository import Gtk, Gdk, GLib
+import threading
 
 GTALK_SERVER = ('talk.google.com', 5222)
+FACEBOOK_SERVER = ('chat.facebook.com', 5222)
 
 class Connection(sleekxmpp.ClientXMPP):
 
-    def __init__(self, window=None):
+    def __init__(self):
         with open("./.account", "r") as account_file:
             mail = account_file.readline()
             mail = mail[0:len(mail)-1]
@@ -13,22 +17,47 @@ class Connection(sleekxmpp.ClientXMPP):
         super(Connection, self).__init__(mail, password)
 
         self.add_event_handler('session_start', self.start)
-        self.add_event_handler('message', self.message)
+        Gdk.threads_enter()
+        self.window = MainWindow()
+        self.window.connect('delete-event', self.quit)
+        self.window.contact_button.connect("clicked",
+                                           lambda x: self.manual_roster_update())
+        Gdk.threads_leave()
 
-        self.window = window
+        self.add_event_handler('message', self.on_new_message)
+
+    def on_new_message(self, msg):
+        self.window.new_message(msg)
+        while Gtk.events_pending():
+            print("pending")
+            Gtk.main_iteration()
+        print("done")
 
     def start(self, event):
+        print("sending presence")
         self.send_presence()
         self.get_roster()
 
-    def message(self, msg):
-        if msg['type'] in ('chat', 'normal'):
-            self.window.new_message_from_conn(msg['from'],msg['body'])
-        else:
-            print("[XMPP] Not chat or normal - ", msg['body'])
+    def manual_roster_update(self):
+        self.window.contact_list.update_from_roster(self.roster)
 
+    def quit(self, w, e):
+        self.disconnect(wait=True)
+        Gtk.main_quit()
+
+def gtkmain():
+    Gdk.threads_enter()
+    Gtk.main()
+    Gdk.threads_leave()
 
 if __name__ == "__main__":
+    GLib.threads_init()
+    Gdk.threads_init()
+
     conn = Connection()
-    conn.connect(('talk.google.com', 5222))
+    conn.connect(GTALK_SERVER)
     conn.process(block=False)
+
+    t = threading.Thread(target=gtkmain)
+    t.daemon = True
+    t.start()
