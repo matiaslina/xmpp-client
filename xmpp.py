@@ -32,6 +32,7 @@ class Connection(sleekxmpp.ClientXMPP):
             print("pending")
             Gtk.main_iteration()
         print("done")
+        return False
 
     def start(self, event):
         print("sending presence")
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     conn.connect(GTALK_SERVER)
     conn.process(block=False)
 
-    t = threading.Thread(target=gtkmain)
-    t.daemon = True
-    t.start()
+    #t = threading.Thread(target=gtkmain)
+    #t.start()
+    gtkmain()
+    assert("We don't need to get here!")
