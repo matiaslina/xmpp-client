@@ -111,9 +111,9 @@ class ChatLayout(Gtk.Box):
         print("Getting textbuffer")
         text_buffer = self.textview.get_buffer()
         print("Textbuffer:", text_buffer)
-        text = text_buffer.get_text()
+        text = text_buffer.get_text(text_buffer.get_start_iter(), text_buffer.get_end_iter(), True)
         print("text",text)
-        new_text = "{}\n{}:{}".format(text, self.friend_name, new_msg)
+        new_text = "{}\n{}:{}".format(text, self.friend, new_msg)
         print(new_text)
         text_buffer.set_text(new_text)
 

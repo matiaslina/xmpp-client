@@ -73,9 +73,6 @@ class MainWindow(Gtk.Window):
         self.add(box)
 
     def new_message(self, msg):
-        print("MSG!")
-        print("tyoe", msg["type"])
-        print("Guard:",msg['type'] in ('chat', 'normal') )
         if msg['type'] in ('chat', 'normal'):
             self.new_message_from_conn(str(msg['from']),str(msg['body']))
         else:
@@ -88,7 +85,6 @@ class MainWindow(Gtk.Window):
         """
         print("new_msg signal activated with friend",friend,"and msg",msg)
 
-        Gdk.threads_enter()
         if not self.stack.get_child_by_name(friend):
             print("Window Friend not found! Setting the stack")
             new_chat_window = widgets.ChatLayout(orientation=Gtk.Orientation.VERTICAL,friend=friend)
@@ -103,10 +99,7 @@ class MainWindow(Gtk.Window):
         child = self.stack.get_child_by_name(friend)
         print("set_visible_child")
         self.stack.set_visible_child(child)
-        #new_chat_window.append_friend_text(msg)
-        print("leving threads")
-        Gdk.threads_leave()
-        print("outside thread")
+        child.append_friend_text(msg)
 
     def row_activated_cb(self, treeview, path, column):
         model = treeview.get_model()
@@ -122,11 +115,25 @@ class MainWindow(Gtk.Window):
         assert(child)
         self.stack.set_visible_child(child)
 
+    def on_roster_update(self, roster):
+        print("on window")
+        self.contact_list.update_from_roster(roster)
+
     def _toggle_visibility(self, w):
         if self.is_visible():
             self.set_visible(False)
         else:
             self.set_visible(True)
+
+    def parse_new_data(self, data):
+        if data["roster"]:
+            on_roster_update(data["roster"])
+        if len(data["msg_queue"]) > 0:
+            for msg in data["msg_queue"]:
+                self.new_message(msg)
+
+            del data["msg_queue"][:]
+
 
 if __name__ == "__main__":
     #logging.basicConfig(level=logging.DEBUG,
