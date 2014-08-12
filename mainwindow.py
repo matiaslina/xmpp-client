@@ -2,7 +2,7 @@ from gi.repository import Gtk, Gio, GObject
 from gi.repository import Gdk, GLib
 from icons import *
 import logging
-import widgets
+from widgets import tray_icon, friend_list, chat_layout
 import os
 
 
@@ -44,7 +44,7 @@ class MainWindow(Gtk.Window):
             self.settings_popover.show_all()
 
     def setup_widgets(self):
-        self.tray = widgets.TrayIcon(available_icon())
+        self.tray = tray_icon.TrayIcon(available_icon())
         self.tray.connect('activate', self._toggle_visibility)
 
         self.stack = Gtk.Stack()
@@ -56,18 +56,16 @@ class MainWindow(Gtk.Window):
         scrolledwindow.set_hexpand(False)
         scrolledwindow.set_vexpand(True)
         
-        self.contact_list = widgets.FriendList()
+        self.contact_list = friend_list.FriendList()
         self.contact_list.connect('row-activated', self.row_activated_cb)
 
         scrolledwindow.add(self.contact_list)
 
         self.stack.add_titled(scrolledwindow, "contact list", "Contact_list")
+        self.contact_button.connect("clicked", self.on_contact_button_clicked)
 
-        stack_switcher = Gtk.StackSwitcher()
-        stack_switcher.set_stack(self.stack)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        box.pack_start(stack_switcher, False, False, 1)
         box.pack_start(self.stack, True, True, 1)
 
         self.add(box)
@@ -78,6 +76,14 @@ class MainWindow(Gtk.Window):
         else:
             print("[XMPP] Not chat or normal - ", msg['body'])
 
+    def on_contact_button_clicked(self,widget):
+        self.move_to_child("contact list")
+
+    def move_to_child(self, child_name):
+        child = self.stack.get_child_by_name(child_name)
+        self.stack.set_visible_child(child)
+        return child
+
     def new_message_from_conn(self, friend, msg):
         """
         friend and msg *needs* to be strings @ this point
@@ -86,19 +92,11 @@ class MainWindow(Gtk.Window):
         print("new_msg signal activated with friend",friend,"and msg",msg)
 
         if not self.stack.get_child_by_name(friend):
-            print("Window Friend not found! Setting the stack")
-            new_chat_window = widgets.ChatLayout(orientation=Gtk.Orientation.VERTICAL,friend=friend)
-            print("show_all()")
+            new_chat_window = chat_layout.ChatLayout(orientation=Gtk.Orientation.VERTICAL,friend=friend)
             new_chat_window.show_all()
-            print("add_titled(...)")
             self.stack.add_titled(new_chat_window, friend, friend)
-        else:
-            print("Found")
 
-        print("get_child")
-        child = self.stack.get_child_by_name(friend)
-        print("set_visible_child")
-        self.stack.set_visible_child(child)
+        child = self.move_to_child(friend)
         child.append_friend_text(msg)
 
     def row_activated_cb(self, treeview, path, column):
@@ -106,7 +104,7 @@ class MainWindow(Gtk.Window):
         iter = model.get_iter(path)
         name = model.get_value(iter, 0)
         if not self.stack.get_child_by_name(name):
-            new_chat_window = widgets.ChatLayout(orientation=Gtk.Orientation.VERTICAL)
+            new_chat_window = chat_layout.ChatLayout(orientation=Gtk.Orientation.VERTICAL)
             new_chat_window.show_all()
             self.stack.add_titled(new_chat_window, name, name)
         
@@ -115,10 +113,6 @@ class MainWindow(Gtk.Window):
         assert(child)
         self.stack.set_visible_child(child)
 
-    def on_roster_update(self, roster):
-        print("on window")
-        self.contact_list.update_from_roster(roster)
-
     def _toggle_visibility(self, w):
         if self.is_visible():
             self.set_visible(False)
@@ -126,13 +120,17 @@ class MainWindow(Gtk.Window):
             self.set_visible(True)
 
     def parse_new_data(self, data):
-        if data["roster"]:
-            on_roster_update(data["roster"])
+        if data["roster"]["changed"]:
+            self.on_roster_update(data["roster"]["data"])
         if len(data["msg_queue"]) > 0:
             for msg in data["msg_queue"]:
                 self.new_message(msg)
 
             del data["msg_queue"][:]
+
+    def on_roster_update(self, roster):
+        self.contact_list.update_from_roster(roster)
+
 
 
 if __name__ == "__main__":

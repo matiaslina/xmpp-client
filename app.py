@@ -10,26 +10,25 @@ class Application(object):
         self.window = None
         self.connection = None
         self.data = {
-            "roster": None,
+            "roster": {
+                "data": None,
+                "changed": True
+            },
             "msg_queue": [],
         }
         self._init_window()
 
         self._init_connection()
 
-        GObject.idle_add(self.append_data)
+        GObject.idle_add(self.send_data_to_gtk_thread)
 
     def _init_window(self):
         self.window = MainWindow()
         self.window.connect('delete-event', self.quit)
-        self.window.connect('destroy', self.quit)
-        self.window.contact_button.connect("clicked",
-                                           lambda x: self.roster_update())
 
     def _init_connection(self):
         self.connection = xmpp.Connection()
-        self.connection.connect(xmpp.GTALK_SERVER)
-        self.connection.process(block=False)
+        self.connection.start_connection()
 
         self.connection.add_event_handler('session_start', self.start)
 
@@ -43,14 +42,18 @@ class Application(object):
     def start(self, event):
         print("sending presence")
         self.connection.send_presence()
-        self.connection.get_roster(block=False, callback=roster_update)
+        self.connection.get_roster()
         return False
 
-    def roster_update(self, roster):
-        print("roster update")
-        self.data["roster"] = roster
+    def roster_update(self):
+        if self.data["roster"]["data"] != None and self.data["roster"]["data"] == self.connection.roster:
+            self.data["roster"]["changed"] = False
+        else:
+            self.data["roster"]["changed"] = True
+            self.data["roster"]["data"] = self.connection.roster
 
-    def append_data(self):
+    def send_data_to_gtk_thread(self):
+        self.roster_update()
         self.window.parse_new_data(self.data)
         return True
 
@@ -70,5 +73,3 @@ if __name__ == "__main__":
 
     gtkmain()
     assert("We don't need to get here!")
-
-        
