@@ -120,13 +120,12 @@ class MainWindow(Gtk.Window):
             self.set_visible(True)
 
     def parse_new_data(self, data):
-        if data["roster"]["changed"]:
-            self.on_roster_update(data["roster"]["data"])
-        if len(data["msg_queue"]) > 0:
-            for msg in data["msg_queue"]:
+        if data["roster"]:
+            self.on_roster_update(data["roster"])
+        if len(data["messages"]) > 0:
+            for msg in data["messages"]:
                 self.new_message(msg)
 
-            del data["msg_queue"][:]
 
     def on_roster_update(self, roster):
         self.contact_list.update_from_roster(roster)
