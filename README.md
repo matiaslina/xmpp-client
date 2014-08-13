@@ -14,4 +14,4 @@ mymail@gmail.com
 mySup3rp45s
 ```
 
-and execute with `python mainwindow.py`
+and execute with `python app.py`
