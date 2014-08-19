@@ -60,6 +60,7 @@ class GtalkConnection(sleekxmpp.ClientXMPP):
         print("Roster Changed")
         self.roster_changed = True
         self.old_roster = self.roster
+        assert(self.roster)
         return False
     
     def reset_data(self):

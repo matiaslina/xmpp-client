@@ -2,22 +2,9 @@ from gi.repository import Gtk, GObject
 from icons import *
 
 class FriendList(Gtk.TreeView):
-    """
-    __gsignals__ = {
-        'roster-updated': (
-            GObject.SIGNAL_RUN_FIRST,   # When
-            None,                       # Return (always none)
-            (dict,)                     # parameters
-        )
-    }
-    """
-
 
     def __init__(self):
         self.liststore = Gtk.ListStore(str, Gio.ThemedIcon)
-        self.liststore.append(["some", available_icon()])
-        self.liststore.append(["other", away_icon()])
-        self.liststore.append(["waaaaa", available_icon()])
 
         Gtk.TreeView.__init__(self, model=self.liststore)
 

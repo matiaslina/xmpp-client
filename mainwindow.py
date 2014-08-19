@@ -6,6 +6,8 @@ from widgets import tray_icon, friend_list, chat_layout
 import os
 
 
+CONTACT_LIST = "contact list"
+
 class MainWindow(Gtk.Window):
 
     def __init__(self):
@@ -61,7 +63,7 @@ class MainWindow(Gtk.Window):
 
         scrolledwindow.add(self.contact_list)
 
-        self.stack.add_titled(scrolledwindow, "contact list", "Contact_list")
+        self.stack.add_titled(scrolledwindow, CONTACT_LIST, CONTACT_LIST)
         self.contact_button.connect("clicked", self.on_contact_button_clicked)
 
 
@@ -71,8 +73,9 @@ class MainWindow(Gtk.Window):
         self.add(box)
 
     def new_message(self, msg):
-        if msg['type'] in ('chat', 'normal'):
-            self.new_message_from_conn(str(msg['from']),str(msg['body']))
+        print("new msg")
+        if msg['msg']['type'] in ('chat', 'normal'):
+            self.new_message_from_conn(str(msg['from']),str(msg['msg']['body']))
         else:
             print("[XMPP] Not chat or normal - ", msg['body'])
 
@@ -123,9 +126,18 @@ class MainWindow(Gtk.Window):
         if data["roster"]:
             self.on_roster_update(data["roster"])
         if len(data["messages"]) > 0:
+            print("Got new messages {}".format(data["messages"]))
             for msg in data["messages"]:
                 self.new_message(msg)
 
+    def get_send_data(self):
+        if self.stack.get_visible_child_name() == CONTACT_LIST:
+            return None, None
+        child = self.stack.get_visible_child()
+        if not child.has_messages:
+            return None, None
+        retval = (child.email, child.send_msg)
+        return retval
 
     def on_roster_update(self, roster):
         self.contact_list.update_from_roster(roster)

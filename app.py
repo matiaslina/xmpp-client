@@ -2,7 +2,17 @@ from gi.repository import Gtk, Gdk, GObject
 import logging
 
 from mainwindow import MainWindow
-import xmpp
+from xmpp.connection import GtalkConnection
+
+def dict_have_data(d):
+    """
+        returns if a dict has (non empty) data in it
+    """
+    retval = False
+    for _,v in d.items():
+        retval = bool(retval or v)
+
+    return retval
 
 class Application(object):
 
@@ -15,13 +25,14 @@ class Application(object):
         self._init_connection()
 
         GObject.idle_add(self.send_data_to_gtk_thread)
+        #GObject.idle_add(self.retrieve_data_from_gtk)
 
     def _init_window(self):
         self.window = MainWindow()
         self.window.connect('delete-event', self.quit)
 
     def _init_connection(self):
-        self.connection = xmpp.GtalkConnection()
+        self.connection = GtalkConnection()
         self.connection.start_connection()
 
     def send_data_to_gtk_thread(self):
@@ -36,11 +47,21 @@ class Application(object):
             print("adding messages")
             data["messages"] = self.connection.msg_queue
 
-        if data:
+        if dict_have_data(data):
             self.window.parse_new_data(data)
             self.connection.reset_data()
 
         return True
+
+    def retrieve_data_from_gtk(self):
+        to, client_data = self.window.get_send_data()
+        if client_data != None:
+            for msg in client_data:
+                print("sending msg",msg)
+                self.connection.send_msg_to(to, msg)
+
+        return False
+
 
     def quit(self, widget, event):
         print("Exiting.. waiting disconnect form server") 
